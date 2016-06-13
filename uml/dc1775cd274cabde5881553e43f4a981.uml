@@ -1,0 +1,13 @@
+@startuml
+
+start
+
+repeat
+  :fetch;
+  :decode;
+  :execute;
+repeat while (continue?)
+
+stop
+
+@enduml

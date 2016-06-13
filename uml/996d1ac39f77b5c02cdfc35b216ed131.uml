@@ -1,0 +1,8 @@
+@startuml
+
+node "Data: 300" <<Register 1>> as a
+node "Data: 300" <<Register 2>> as b
+
+b -left-> a
+
+@enduml
