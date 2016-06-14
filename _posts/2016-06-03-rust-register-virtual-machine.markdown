@@ -6,12 +6,7 @@ categories: jekyll update
 ---
 # Let's build a virtual machine in Rust
 
-
-In this post, we'll create a simple register based virtual machine. Virtual machines are usually written in low level languages like C. However, since C has been around for many years (and although it isn't going anywhere soon) it would be nice to build the virtual machine in a more modern programing language.
-
-Since Mozilla's Rust language is targeted at system level applications and combines the efficiency of C with modern language features, it makes it an ideal choice to build our virtual machine.
-
-The eventual purpose of our virtual machine is to compute the greatest common denominator *gcd* of a pair of 8 bit integers. This algorithm is over 2000 years old and it was featured in Euclid's Elements. Essentially, the algorithm takes a pair of integers and finds the largest integer that divides them both. It is a good algorithm for our virtual machine since it illustrates how we can encode a recursive procedure by just using the common register operations Load, Add, Swap and Branch.
+In this post we create a simple register based virtual machine to compute the greatest common divisor of a pair of small integers. Virtual machines are usually written in system level languages, so for this example, we will build the virtual machine in Mozilla's Rust language.
 
 ### Registers
 
@@ -42,7 +37,7 @@ calls the default function on `[u16; 3]` giving
 registers = RegisterFile::default() = [0, 0, 0];
 {% endhighlight %}
 
-Note, we could declare the registers as global mutable variables outside the `cpu` function so that other functions or methods can use them without passing them in as parameters. However, it's unsafe to do this in multithreaded applications, so the Rust language forces you to use the `unsafe` code block whenever you want to do this. For example, if you wanted to print out the value of a global mutible version of the instruction pointer, then you would have to do it like so:
+Alternatively, you could declare the registers as global mutable variables outside the `cpu` function so other functions or methods can use them without passing them in as parameters. However, it’s unsafe to do this in multithreaded applications, so the Rust language forces you to use the `unsafe` code block if you want to do this. For example, if you wanted to print out the value of a global mutable version of the instruction pointer, then you would have to do it like so:
 
 {% highlight rust %}
 unsafe {
@@ -52,7 +47,7 @@ unsafe {
 
 ### The Fetch, Decode, Execute Cycle
 
-The `cpu` function needs to perform the fetch, decode, execute cycle:
+The `cpu` function performs the fetch, decode, execute cycle. First, the instruction pointer **fetches** an instruction from the instruction set. Here, the *instruction set* is an array of instructions encoded as 16 bit words, such as `[0xFF0D, 0xAB0A]`. Then, the instruction is **decoded** and the CPU **executes** it by performing an appropriate action. Finally, the instruction pointer is incremented and the process continues until it halts.
 
 {% plantuml %}
 start
@@ -61,14 +56,12 @@ repeat
   :fetch;
   :decode;
   :execute;
-repeat while (continue?)
+repeat while (halt?)
 
 stop
 {% endplantuml %}
 
-We describe this process as follows: Using the instruction pointer the CPU **fetches** an instruction from the instruction set. Here, the *instruction set* is an array of instructions encoded as 16 bit words, such as `[0xFF0D, 0xAB0A]`. When it has **decoded** the instruction, the CPU **executes** it by performing the relivant operation. The instruction pointer gets incremented and the process continues until it meets the halt condition.
-
-We give more detail in the following sections:
+We give more details in the following sections:
 
 ### Instructions
 
@@ -78,52 +71,49 @@ The virtual machine reads from an array of instructions encoded as 16 bit words.
 let encoded_instructions = [0xFFFD, 0xFF2A, 0x1121];
 {% endhighlight %}
 
-An *opcode* is the part of the encoded instruction that specifies what operation gets performed. The first 4 bits of each encoded instruction will represent the opcode and the remaining bits will specify arithmetic operations and/or registers that get acted on. For example, if an encoded instruction had the opcode that corresponded to a **Swap** operation, then this instruction executes and swaps the values of the registers encoded in the remaining 12 bits.
+An *opcode* is the part of the encoded instruction that specifies the operation that gets performed. In our encoding, the first 4 bits of an encoded instruction represent the opcode; the remaining bits specify the parameters.
 
-The opcodes, and their descriptions, used by our virtual machine is given in the following table:
+The following table defines the opcodes used by the virtual machine:
 
 | Opcode        | Description           |
 | ------------- |-------------|
-| Halt      | terminates the program and prints out the value of the 0th register in the register file |
-| Load      | loads an 8 bit unsigned integer into the specified destination register      |
-| Swap | swaps the value of the destination register with the value of the source register.  To do the swap, you must specify a temporary register    |
+| Halt      | terminates the program and prints out the value of the 0th arithmetic register |
+| Load      | loads an 8 bit unsigned integer into the destination register      |
+| Swap | swaps the data in the destination register with the data in the source register.  You must specify a temporary register   |
 | Mod   | computes the modulus of two register values and puts the result in a new register   |
-| BEZ   | moves the instruction pointer back by offset-many places if the register's value is equal to zero
+| BEZ   | moves the instruction pointer back by offset-many places only if the register's value is equal to zero
 
 
 <br />
-Additionally, the following table  defines the instruction encoding:
+The following table defines the instruction encoding:
 
 | Opcode   | 1st hex digit   | 2nd hex digit   | 3rd hex digit   | 4th hex digit   |
 | ------------- |-------------| ------------- |-------------| -------------| 
 | Halt   | 0   | -   | -   | -   |
 | Load   | 1   | destination register   | value   | *   |
 | Swap   | 2   | destination register   | source register   | temporary register   |
-| Mod   | 3   | destination register   | source register   | -   |
-| Branch   | 4   | offset   | *   | *   |
+| Mod   | 3   | dividend  | divisor  | destination   |
+| BEZ   | 4   | offset   | *   | *   |
 
 <br />
-Here, we use * to mean the hex digits to the right can be used for the same value. For example, the value in the **Load** instruction is an 8 bit integer, not two 4 bit integers. And the - just means we ignore that hex digit.
+Here, we use "*" to mean the hex digits to the right are part of the same value. For example, the value in the **Load** instruction is an 8 bit integer, not two 4 bit integers. The "-" means we ignore that hex digit.
 
-
-In Rust, each variant of an enum can have data associated to it. This makes enums a good choice to represent instructions since each variant will be the opcode and its data will be the variables it needs to opperate on. So we'll end by defining `Instruction` to be the following enum:
+In Rust, enum variants can have data associated to them. So we use an enum to represent instructions, where each variant represents the opcode and its data are the parameters it operates on:
 
 ```rust
 enum Instruction {
     Halt,
     Load { destination: usize, value: u16 },
     Swap { destination: usize, source: usize, temp: usize },
-    Add { destination: usize, source: usize },
-    Branch { offset: usize }
+    Mod { dividend: usize, divisor: usize, destination: usize},
+    BEZ { offset: usize }
 }
 ```
 
 
 ### Fetch
 
-The *fetch* operation is paticularily simple - it just retrieves an entry from an array of instructions based on the instruction pointer. However, before we start, we'll first define the `Program` struct:
-
-Let `Program` be the struct defined by
+To implement the *fetch* operation, we will first define the `Program` struct:
 
 {% highlight rust %}
 struct Program<'a> {
@@ -131,11 +121,11 @@ struct Program<'a> {
 }
 {% endhighlight %}
 
-The `instructions` field is an array slice of 16 bit unsigned integers that uses an explicit `'a` lifetime. 
+The `instructions` field is an array slice that uses an explicit `'a` lifetime. Here, an *array slice* is an array with size not known at compile time and the *explicit lifetime* `<'a>` means the `Program` instance won't outlive the referenced `instructions` object. 
 
-Here, an array slice is an array whose size is not known at compile time. The explicit lifetime `<'a>` means the `Program` instance won't outlive the reference that's passed in. 
+We use the `Program` struct to wrap the encoded instructions read by the virtual machine. 
 
-We use the `Program` struct to store the encoded instructions that are read by our virtual machine. We can now define an implementation of `Program` that defines a *fetch* method that returns the instruction indexed by the instruction pointer
+Now define an implementation of `Program` that defines a *fetch* method that returns the instruction indexed by the instruction pointer:
 
 {% highlight rust %}
 impl<'a> Program<'a> {
@@ -145,7 +135,7 @@ impl<'a> Program<'a> {
 }
 {% endhighlight %}
 
-For example:
+We use the fetch method like so:
 
 {% highlight rust %}
 let encoded_instructions = Program { instructions: &[0x1110, 0x2100, 0x3010, 0x0] };

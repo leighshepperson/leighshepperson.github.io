@@ -6,7 +6,7 @@ repeat
   :fetch;
   :decode;
   :execute;
-repeat while (stop?)
+repeat while (halt?)
 
 stop
 
