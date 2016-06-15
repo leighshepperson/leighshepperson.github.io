@@ -6,15 +6,13 @@ categories: jekyll update
 ---
 # Let's build a virtual machine in Rust
 
-In this post we create a simple register based virtual machine to compute the greatest common divisor of a pair of small integers. Virtual machines are usually written in system level languages, so for this example, we will build the virtual machine in Mozilla's Rust language.
+In this post, we'll create a simple register based virtual machine to compute the greatest common divisor of a pair of small integers. Virtual machines are usually written in system level languages, so for this example, we'll build the virtual machine in Mozilla's Rust language.
 
 ### Registers
 
-In a physical processor, a *register* is an area of data storage available to a central processing unit (CPU). They are used to speed up programs so they don't have to access the main memory for simple operations like add and subtract. 
+In a physical processor, a *register* is an area of data storage available to a central processing unit (CPU). They are used to speed up programs so they don't have to access the main memory to do simple operations like add and subtract.
 
-Furthermore, *registers files* are arrays of registers.
-
-The virtual machine needs four registers. An *instruction pointer* `ip` to keep track of the next instruction in the program and three arithmetic registers in a register file called `registers`. We'll initialise these inside the cpu function:
+Our virtual machine needs four virtual registers: An *instruction pointer* `ip` to keep track of the next instruction in the program and three arithmetic registers in a *register file* called `registers`. Note, a *register file* is just an array of registers. We'll initialise these inside the `cpu` function:
 
 {% highlight rust %}
 type RegisterFile = [u16; 3];
@@ -25,19 +23,21 @@ fn cpu() {
 }
 {% endhighlight %}
 
+Let's talk briefly about the implementation.
+
 Since `RegisterFile` is a type alias of `[u16; 3]` it has access to all its inherent methods. So the line
 
 {% highlight rust %}
 let mut registers = RegisterFile::default();
 {% endhighlight %}
 
-calls the default function on `[u16; 3]` giving
+just calls the default function on `[u16; 3]` giving
 
 {% highlight rust %}
 registers = RegisterFile::default() = [0, 0, 0];
 {% endhighlight %}
 
-Alternatively, you could declare the registers as global mutable variables outside the `cpu` function so other functions or methods can use them without passing them in as parameters. However, it’s unsafe to do this in multithreaded applications, so the Rust language forces you to use the `unsafe` code block if you want to do this. For example, if you wanted to print out the value of a global mutable version of the instruction pointer, then you would have to do it like so:
+Additionally, if the registers were declared as global mutable variables outside the `cpu` function, then other functions or methods could use them without passing them in as parameters. However, this is unsafe in multithreaded applications, so the Rust language forces you to use the `unsafe` code block in this situation. For example, if you wanted to print out the value of a global version of the instruction pointer, then you would have to do it like this:
 
 {% highlight rust %}
 unsafe {
@@ -61,7 +61,7 @@ repeat while (halt?)
 stop
 {% endplantuml %}
 
-We give more details in the following sections:
+We'll give more details in the following sections:
 
 ### Instructions
 
@@ -73,7 +73,7 @@ let encoded_instructions = [0xFFFD, 0xFF2A, 0x1121];
 
 An *opcode* is the part of the encoded instruction that specifies the operation that gets performed. In our encoding, the first 4 bits of an encoded instruction represent the opcode; the remaining bits specify the parameters.
 
-The following table defines the opcodes used by the virtual machine:
+The following table defines the opcodes used by our virtual machine:
 
 | Opcode        | Description           |
 | ------------- |-------------|
@@ -93,7 +93,7 @@ The following table defines the instruction encoding:
 | Load   | 1   | destination register   | value   | *   |
 | Swap   | 2   | destination register   | source register   | temporary register   |
 | Mod   | 3   | dividend  | divisor  | destination   |
-| BEZ   | 4   | offset   | *   | *   |
+| BEZ   | 4   | register   | offset   | *   |
 
 <br />
 Here, we use "*" to mean the hex digits to the right are part of the same value. For example, the value in the **Load** instruction is an 8 bit integer, not two 4 bit integers. The "-" means we ignore that hex digit.
@@ -106,14 +106,14 @@ enum Instruction {
     Load { destination: usize, value: u16 },
     Swap { destination: usize, source: usize, temp: usize },
     Mod { dividend: usize, divisor: usize, destination: usize},
-    BEZ { offset: usize }
+    BEZ { register: usize, offset: usize }
 }
 ```
 
 
 ### Fetch
 
-To implement the *fetch* operation, we will first define the `Program` struct:
+To implement the *fetch* operation, we'll first define the `Program` struct:
 
 {% highlight rust %}
 struct Program<'a> {
@@ -121,11 +121,9 @@ struct Program<'a> {
 }
 {% endhighlight %}
 
-The `instructions` field is an array slice that uses an explicit `'a` lifetime. Here, an *array slice* is an array with size not known at compile time and the *explicit lifetime* `<'a>` means the `Program` instance won't outlive the referenced `instructions` object. 
+The `instructions` field is an array slice that uses an explicit `'a` lifetime. Here, an *array slice* is an array whose size isn't known at compile time and the *explicit lifetime* `'a` means the `Program` instance won't outlive the referenced `instructions` object. 
 
-We use the `Program` struct to wrap the encoded instructions read by the virtual machine. 
-
-Now define an implementation of `Program` that defines a *fetch* method that returns the instruction indexed by the instruction pointer:
+Now we give an implementation of `Program` that defines a *fetch* method that returns the instruction indexed by the instruction pointer:
 
 {% highlight rust %}
 impl<'a> Program<'a> {
@@ -145,7 +143,7 @@ let encode_instruction = program.fetch(0);
 
 ### Decode
 
-Since all the instructions are encoded as 16 bit hexidecimal words, we'll need a way of decoding them. Given the instruction encoding table above, we can do this by using bit shifts and masks. 
+Since the instructions are encoded hexidecimal words, we'll need a simple way of decoding them. We can do this by using bit shifts and masks. 
 
 For example, consider the encoded instruction `0x13D2`. Writing this out in binary gives us the following representation:
 
@@ -153,14 +151,14 @@ For example, consider the encoded instruction `0x13D2`. Writing this out in bina
 0001 0011 1101 0010
 ```
 
-We easily get the opcode **Load** by bit shifting it 12 places to the right:
+We can easily find the opcode **Load** by bit shifting it 12 places to the right:
 
 ```rust
         0001 0011 1101 0010 = 0x13D2 
 >> 12   0000 0000 0000 0001 = 0x1 = 1
 ```
 
-Since the operation is **Load**, we know from the encoding table that the next 4 bits represent the register and the last 8 bits must be the value. To get the register we need to shift `0x13D2` 8 bits to the right and then apply the bit mask `0xF` to kill off the unwanted bits:
+Since the operation is **Load**, we know from the encoding table that the next 4 bits represent the register and the last 8 bits must be the value. To get the register we need to shift `0x13D2` by 8 bits to the right and then apply the bit mask `0xF` to kill off the unwanted bits:
 
 ```rust
         0001 0011 1101 0010 = 0x13D2
@@ -171,7 +169,7 @@ Since the operation is **Load**, we know from the encoding table that the next 4
 AND     0000 0000 0000 0011 = 0x3 = 3
 ```
 
-We get the value of 210 by performing the bitwise **AND** operation with `0xFF` and converting from hexidecimal to decimal:
+Finally, we get the value by performing the bitwise **AND** operation with `0xFF` and converting from hexidecimal to decimal:
 
 ```rust
         0001 0011 1101 0010 = 0x13D2 
@@ -179,7 +177,7 @@ We get the value of 210 by performing the bitwise **AND** operation with `0xFF` 
 AND     0000 0000 1101 0010 = 0xD2 = 210
 ```
 
-In our virtual machine, we'll implement the decode step by defining an implementation of `Instruction` that defines a `decode` method that returns the appropriate `Instruction` variant. If we are not able to decode the instruction, then we'll use the generic `Return` type to return the variant `Err` with an informative message. Otherwise, it just returns success `Ok` and its value.
+In our virtual machine, we implement the decode step by giving an implementation of `Instruction` that defines a `decode` method that returns the appropriate `Instruction` variant. If we are not able to decode the instruction, then we'll use the generic `Return` type to return the variant `Err` with an informative message. Otherwise, it just returns `Ok` and its value.
 
 ```rust
 impl Instruction {
@@ -188,15 +186,14 @@ impl Instruction {
         let reg1 = ((encoded_instruction >> 8) & 0xF) as usize;
         let reg2 = ((encoded_instruction >> 4) & 0xF) as usize;
         let reg3 = (encoded_instruction & 0xF) as usize;
-        let offset = (encoded_instruction & 0xFFF) as usize;
         let value = encoded_instruction & 0xFF;
 
         match operator {
             0 => Ok(Instruction::Halt),
             1 => Ok(Instruction::Load { destination: reg1, value: value }),
             2 => Ok(Instruction::Swap { destination: reg1, source: reg2, temp: reg3 }),
-            3 => Ok(Instruction::Add { destination: reg1, source: reg2 }),
-            4 => Ok(Instruction::Branch { offset: offset }),
+            3 => Ok(Instruction::Mod { dividend: reg1, divisor: reg2, destination: reg3 }),
+            4 => Ok(Instruction::BEZ { register: reg1, offset: value }),
             _ => Err("Failed to decode the instruction")
         }
     }
@@ -204,16 +201,16 @@ impl Instruction {
 
 ### Execute
 
-After decoding an instruction, we'll need to execute it. This step involves performing an arithmetic operation on one or more of the registers. For example, let's consider the **Swap** operation:
+The execution step involves performing an arithmetic operation on one or more of the registers. For example, let's consider the **Swap** operation:
 
-In our virtual machine, we have a register file containing three registers that we can read and write to. So suppose we want to swap the data in register 1 with the data in register 2:
+In our virtual machine, there's a register file containing three arithmetic registers. Now let's say we want to swap the data in register 1 with the data in register 2:
 
 {% plantuml %}
 node "Data: 200" <<Register 1>> as a
 node "Data: 300" <<Register 2>> as b
 {% endplantuml %}
 
-First, we need to copy the data of register 1 into a temporary register (which in our case is register 3):
+First, we'll copy the data of register 1 into a temporary register (which in our case is register 3):
 
 {% plantuml %}
 node "Data: 200" <<Register 1>> as a
@@ -224,7 +221,7 @@ a -[hidden]right-> b
 a -down-> c
 {% endplantuml %}
 
-Then, we need to copy the data of register 2 and use it to overwrite the data in register 1:
+Then, we'll overwrite the data in register 1 with the data in register 2:
 
 {% plantuml %}
 node "Data: 300" <<Register 1>> as a
@@ -233,7 +230,7 @@ node "Data: 300" <<Register 2>> as b
 b -left-> a
 {% endplantuml %}
 
-Finaly, we just copy the contents of register 3 into register 2:
+Finaly, we'll copy the data of register 3 into register 2:
 
 {% plantuml %}
 node "Data: 300" <<Register 1>> as a
@@ -246,7 +243,7 @@ c --> b
 {% endplantuml %}
 
 <br />
-Given the above, we can readily implement the **Swap** operation in Rust as follows:
+The **Swap** operation is easily implemented like so:
 
 ```rust
 fn swap(source: usize, destination: usize, temp: usize, registers: &mut [u16]) {
@@ -256,7 +253,7 @@ fn swap(source: usize, destination: usize, temp: usize, registers: &mut [u16]) {
 }
 ```
 
-Finally, we'll extend the implementation of the `Instruction` enum by defining an `execute` method that uses patten matching on the `Instruction` variant to determine how to execute itself:  
+Finally, we can extend the implementation of the `Instruction` enum by defining an `execute` method that pattern matches on the `Instruction` variant to determine what happens when it executes:  
 
 ```rust
 fn execute(&self, registers: &mut [u16], ip: &mut usize) -> bool {
@@ -267,11 +264,13 @@ fn execute(&self, registers: &mut [u16], ip: &mut usize) -> bool {
         Instruction::Swap { destination, source, temp } => {
             swap(destination, source, temp, registers);
         },
-        Instruction::Add { destination, source } => {
-            registers[destination] = registers[destination] + registers[source];
+        Instruction::Mod { dividend, divisor, temp } => {
+            registers[temp] = registers[dividend] % registers[divisor];
         },
-        Instruction::Branch { offset } => {
-            *ip -= offset - 1;
+        Instruction::BEZ { register, offset } => {
+            if registers[register] == 0 {
+                *ip -= offset;
+            }
         },
         Instruction::Halt => {
             println!("{:?}", registers[0]);
@@ -285,14 +284,14 @@ fn execute(&self, registers: &mut [u16], ip: &mut usize) -> bool {
 
 ### The Greatest Common Divisor
 
-The greatest common divisor (gcd) of a pair of integers *a* and *b*, where at least one of *a* or *b* is non zero, is the largest integer *c* that divides both *a* and *b* without remainder. For example, the gcd of 9 and 12 is 3 and the gcd of 20 and 52 is 4. 
+Let (*a*, *b*) be a pair of integers where at least one of *a* or *b* is non zero. Then, the *greatest common divisor* (gcd) of *a* and *b*, is the largest integer *c* that divides both *a* and *b* without remainder. For example, the gcd of the pair (9, 12) is 3 and the gcd of the pair (20, 52) is 4. 
 
-In general, the gcd is found by applying the following recursive algorithm:
+In particular, the gcd is found recursively by:
 
 $$\mbox{gcd}(a, b) = \begin{cases} a &\mbox{if } a \equiv 0 \\ 
 \mbox{gcd}(b, a \bmod b) & \mbox{if } a \not\equiv 0 \end{cases} \pmod{b}.$$
 
-Although it didn't appear in this form, this algorithm is over 2000 years old and it was featured in Euclid's Elements. It is a good algorithm for our virtual machine since it can be implemented easily and it uses all the instructions Load, Mod, Swap, BEQ, and Halt. The instructions it needs to execute to compute the gcd of the pair 15 and 12 is given by the following diagram:
+We can use this algorithm in conjunction with our virtual machine to compute the greatest common divisor of small 8 bit integers. To see this, the instructions our virtual machine needs to execute to compute the gcd of the pair (12, 15) are detailed in the following diagram:
 
 {% plantuml %}
 start
