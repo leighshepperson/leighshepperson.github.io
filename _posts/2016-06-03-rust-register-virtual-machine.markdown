@@ -1,12 +1,16 @@
 ---
 layout: post
-title:  "Build a register virtual machine in Rust"
-date:   2016-06-03 23:21:31 +0100
+title:  "Let's Build a Register Based Virtual Machine in Rust: Part 1"
+date:   2016-06-13 23:21:31 +0100
 categories: jekyll update
 ---
-# Let's build a virtual machine in Rust
+### Introduction
 
-In this post, we'll create a simple register based virtual machine to compute the greatest common divisor of a pair of small integers. Virtual machines are usually written in system level languages, so for this example, we'll build the virtual machine in Mozilla's Rust language.
+In this post, we'll create a simple register based virtual machine and in Part 2 we'll use it to compute the greatest common divisor of a pair of small integers. 
+
+Virtual machines are usually written in system level languages, so that's why we're going to build the virtual machine using Rust.
+
+We won't cover either Rust or Register machines in great detail, so if you need more details, have a read of the [Rust book](https://doc.rust-lang.org/book/README.html) and [Compilers: Principles, Techniques, and Tools](https://www.amazon.co.uk/Compilers-Principles-Techniques-V-Aho/dp/1292024348).
 
 ### Registers
 
@@ -281,65 +285,5 @@ fn execute(&self, registers: &mut [u16], ip: &mut usize) -> bool {
     true
 }
 ```
-
-### The Greatest Common Divisor
-
-Let (*a*, *b*) be a pair of integers where at least one of *a* or *b* is non zero. Then, the *greatest common divisor* (gcd) of *a* and *b*, is the largest integer *c* that divides both *a* and *b* without remainder. For example, the gcd of the pair (9, 12) is 3 and the gcd of the pair (20, 52) is 4. 
-
-In particular, the gcd is found recursively by:
-
-$$\mbox{gcd}(a, b) = \begin{cases} a &\mbox{if } a \equiv 0 \\ 
-\mbox{gcd}(b, a \bmod b) & \mbox{if } a \not\equiv 0 \end{cases} \pmod{b}.$$
-
-We can use this algorithm in conjunction with our virtual machine to compute the greatest common divisor of small 8 bit integers. To see this, the instructions our virtual machine needs to execute to compute the gcd of the pair (12, 15) are detailed in the following diagram:
-
-{% plantuml %}
-start
-: Load 0 12;
-note right
-  Load the number 12 into register 0
-  ====
-  0x110C
-end note
-: Load 1 15;
-note right
-  Load the number 15 into register 1
-  ====
-  0x110F
-end note
-repeat
-  :Mod 0 1 2;
-note right
-  Compute the modulus of register 0
-  and register 1 and store the result 
-  into register 2
-  ====
-  0x2012
-end note
-  :Swap 1 0;
-note right
-  Swap the data in register 1 with the 
-  data in register 0
-  ====
-  0x3010
-end note
-  :Swap 2 1;
-note right
-  Swap the data in register 2 with the 
-  data in register 1
-  ====
-  0x3021
-end note
-repeat while(BEZ 1 3)
-: Halt;
-note right
-  Terminate the program and print out  
-  the value of register 0
-  ====
-  0x0000
-end note
-
-stop
-{% endplantuml %}
 
 [x86-regs]: http://www.eecg.toronto.edu/~amza/www.mindsec.com/files/x86regs.html 
