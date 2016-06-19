@@ -53,17 +53,7 @@ unsafe {
 
 The `cpu` function performs the fetch, decode, execute cycle. First, the instruction pointer **fetches** an instruction from the instruction set. Here, the *instruction set* is an array of instructions encoded as 16 bit words, such as `[0xFF0D, 0xAB0A]`. Then, the instruction is **decoded** and the CPU **executes** it by performing an appropriate action. Finally, the instruction pointer is incremented and the process continues until it halts.
 
-{% plantuml %}
-start
-
-repeat
-  :fetch;
-  :decode;
-  :execute;
-repeat while (halt?)
-
-stop
-{% endplantuml %}
+![Fetch Decode Execute](/uml/dc1775cd274cabde5881553e43f4a981.png)
 
 We'll give more details in the following sections:
 
@@ -209,42 +199,19 @@ The execution step involves performing an arithmetic operation on one or more of
 
 In our virtual machine, there's a register file containing three arithmetic registers. Now let's say we want to swap the data in register 1 with the data in register 2:
 
-{% plantuml %}
-node "Data: 200" <<Register 1>> as a
-node "Data: 300" <<Register 2>> as b
-{% endplantuml %}
+![Fetch Decode Execute](/uml/6b842a1b925005098bac06c3f32addf0.png)
 
 First, we'll copy the data of register 1 into a temporary register (which in our case is register 3):
 
-{% plantuml %}
-node "Data: 200" <<Register 1>> as a
-node "Data: 300" <<Register 2>> as b
-node "Data: 200" <<Register 3>> as c
-
-a -[hidden]right-> b
-a -down-> c
-{% endplantuml %}
+![Fetch Decode Execute](/uml/417d34727c6d05050c0c1731d572afe3.png)
 
 Then, we'll overwrite the data in register 1 with the data in register 2:
 
-{% plantuml %}
-node "Data: 300" <<Register 1>> as a
-node "Data: 300" <<Register 2>> as b
-
-b -left-> a
-{% endplantuml %}
+![Fetch Decode Execute](/uml/996d1ac39f77b5c02cdfc35b216ed131.png)
 
 Finaly, we'll copy the data of register 3 into register 2:
 
-{% plantuml %}
-node "Data: 300" <<Register 1>> as a
-node "Data: 200" <<Register 2>> as b
-node "Data: 200" <<Register 3>> as c
-
-a -[hidden]right-> b
-a -[hidden]down-> c
-c --> b
-{% endplantuml %}
+![Fetch Decode Execute](/uml/ca85471a4753fa5181b65fdca52a340f.png)
 
 <br />
 The **Swap** operation is easily implemented like so:
