@@ -273,10 +273,6 @@ impl<'a> Account<'a>{
     }
 }
 
-fn info(account: &Account) -> String {
-    format!("The account name is {} and the current balance is {} pounds.", account.name, account.balance)
-}
-
 fn main() {
     let mut johns_account = Account { name: "John Smith", balance: 200.0 };
     let mut janes_account = Account { name: "Jane Doe", balance: 300.0 };
