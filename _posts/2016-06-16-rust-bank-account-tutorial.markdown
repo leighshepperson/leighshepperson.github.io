@@ -14,7 +14,7 @@ Make sure you've installed Rust - go to the [getting started guide](https://doc.
 
 ### Create a new project
 
-We'll use cargo to create a new project. Lets call the project `simple_bank` and create it by running the command
+We'll use cargo to create a new project. Let's call the project `simple_bank` and create it by running the command
 
 {% highlight bash %}
 cargo new simple_bank --bin
@@ -80,7 +80,7 @@ In Rust, lifetimes are a pretty complicated subject, but they also form the core
 
 [http://rustbyexample.com/scope/lifetime/explicit.html](http://rustbyexample.com/scope/lifetime/explicit.html)
 
-Now lets create an `Account` and print a message to the console:
+Now let's create an `Account` and print a message to the console:
 
 {% highlight rust %}
 fn main() {
@@ -98,7 +98,7 @@ If you run `cargo run`, then you should see this:
 
 ### Functions
 
-Now lets write a function to wrap up the print statement we saw at the end of the last section:
+Now let's write a function to wrap up the print statement we saw at the end of the last section:
 
 {% highlight rust %}
 fn info(account: &Account) -> String {
@@ -119,7 +119,7 @@ If you run `cargo run`, then you should see this:
 "The account name is John Smith and the current balance is 100 pounds."
 {% endhighlight %}
 
-Lets talk about the implementation:
+Let's talk about the implementation:
 
 First, notice that the function's parameter type is `&Account`. This means it accepts a reference to an `Account` struct. So to use it, we need to call the `info` method like this: `info(&account)`. 
 
@@ -224,7 +224,7 @@ The output of this should look like this:
 "The account name is John Smith and the current balance is 190 pounds."
 {% endhighlight %}
 
-Finally, lets define a transfer method. This method will simply transfer money from one account to another. We can implement this by reusing the withdraw and deposit methods defined earlier. We do this as follows:
+Finally, let's define a transfer method. This method will simply transfer money from one account to another. We can implement this by reusing the withdraw and deposit methods defined earlier. We do this as follows:
 
 {% highlight rust %}
 fn transfer(&mut self, recipient: &mut Account, amount: f32) -> Result<(), String> {
@@ -277,19 +277,19 @@ fn main() {
     let mut johns_account = Account { name: "John Smith", balance: 200.0 };
     let mut janes_account = Account { name: "Jane Doe", balance: 300.0 };
 
-    println!("{:?}", "Lets look at John's and Jane's current accounts:" );
+    println!("{:?}", "Let's look at John's and Jane's current accounts:" );
 
     println!("{:?}", johns_account.info());
     println!("{:?}", janes_account.info());
 
-    println!("{:?}", "Now lets try to transfer 300 pounds from John to Jane:");
+    println!("{:?}", "Now let's try to transfer 300 pounds from John to Jane:");
 
     match johns_account.transfer(&mut janes_account, 300.0) {
         Err(message) => println!("{:?}", message),
         Ok(_) => ()
     }
 
-    println!("{:?}", "Now lets try to transfer 100 pounds from John to Jane:");
+    println!("{:?}", "Now let's try to transfer 100 pounds from John to Jane:");
 
     match johns_account.transfer(&mut janes_account, 100.0) {
         Err(message) => println!("{:?}", message),
@@ -305,12 +305,12 @@ fn main() {
 And this should output:
 
 {% highlight bash %}
-"Lets look at John's and Jane's current accounts:"
+"Let's look at John's and Jane's current accounts:"
 "The account name is John Smith and the current balance is 200 pounds."
 "The account name is Jane Doe and the current balance is 300 pounds."
-"Now lets try to transfer 300 pounds from John to Jane:"
+"Now let's try to transfer 300 pounds from John to Jane:"
 "Unable to withdraw. John Smith has insufficient funds!"
-"Now lets try to transfer 100 pounds from John to Jane:"
+"Now let's try to transfer 100 pounds from John to Jane:"
 "The account name is John Smith and the current balance is 100 pounds."
 "The account name is Jane Doe and the current balance is 400 pounds."
 {% endhighlight %}
