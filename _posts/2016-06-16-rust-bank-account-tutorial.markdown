@@ -86,14 +86,14 @@ Now lets create an `Account` and print a message to the console:
 fn main() {
     let account = Account { name: "John Smith", balance: 200.0 };
 
-    println!("The account name is {} and the current balance is {} pounds", account.name, account.balance);
+    println!("The account name is {} and the current balance is {} pounds.", account.name, account.balance);
 }
 {% endhighlight %}
 
 If you run `cargo run`, then you should see this:
 
 {% highlight bash %}
-The account name is John Smith and the current balance is 200 pounds
+"The account name is John Smith and the current balance is 200 pounds."
 {% endhighlight %}
 
 ### Functions
@@ -305,7 +305,7 @@ fn main() {
 And this should output:
 
 {% highlight bash %}
-"Lets look at Johns and Janes current accounts:"
+"Lets look at John's and Jane's current accounts:"
 "The account name is John Smith and the current balance is 200 pounds."
 "The account name is Jane Doe and the current balance is 300 pounds."
 "Now lets try to transfer 300 pounds from John to Jane:"
