@@ -74,7 +74,7 @@ struct Account<'a> {
 }
 {% endhighlight %}
 
-In Rust, lifetimes are a complicated subject, but they also form the core of the language; you can find out more about them here:
+In Rust, lifetimes are a pretty complicated subject, but they also form the core of the language; you can find out more about them here:
 
 [https://doc.rust-lang.org/book/lifetimes.html](https://doc.rust-lang.org/book/lifetimes.html)
 
