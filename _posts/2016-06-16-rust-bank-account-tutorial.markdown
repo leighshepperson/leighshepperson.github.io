@@ -35,7 +35,7 @@ struct Account {
 
 {% endhighlight %}
 
-Now compile the project using `cargo run`. Whoops -- you should see the following error:
+Now run the project using `cargo run`. Whoops -- you should see the following error:
 
 {% highlight bash %}
 "2:14 error: the trait `core::marker::Sized` is not implemented for the type `str` [E0277]"
@@ -52,7 +52,7 @@ struct Account {
 
 {% endhighlight %}
 
-Now compile the project using `cargo run`. Double whoops -- you should see the following error:
+Now run the project using `cargo run`. Double whoops -- you should see the following error:
 
 {% highlight bash %}
 "2:15 error: missing lifetime specifier [E0106]"
