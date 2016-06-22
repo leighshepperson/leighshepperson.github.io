@@ -179,7 +179,7 @@ and it should print out
 "The account name is John Smith and the current balance is 232 pounds."
 {% endhighlight %}
 
-Now for the withdraw method. A simple implementation is to just do the reverse of the deposit method. But our simple bank does not allow overdrafts! So we want to tell the user that they are not allowed to withdraw more money than their current balance. To do this, we are going to use Rust's `Result` type. The `Result` type is an enum with two variants `Ok` and `Err`. In `Rust`, enums can have data, so we can give the `Err` variant a string message as its data. However, we don't want to return anything specific in the `Ok` variant, so we just return do `Ok(())`. Let's define the withdraw method:
+Now for the withdraw method. A simple implementation is to just do the reverse of the deposit method. But our simple bank does not allow overdrafts! So we want to tell the user that they are not allowed to withdraw more money than their current balance. To do this, we are going to use Rust's `Result` type. The `Result` type is an enum with two variants `Ok` and `Err`. In `Rust`, enums can have data, so we can give the `Err` variant a string message as its data. However, we don't want to return anything specific in the `Ok` variant, so we just return `Ok(())`. Let's define the withdraw method:
 
 {% highlight rust %}
 fn withdraw(&mut self, amount: f32) -> Result<(), String> {
