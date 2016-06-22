@@ -85,7 +85,7 @@
 
         let vector = vec![1, 2, 3, 4];
 
-        let borrowed_vector_reference = &v;
+        let borrowed_vector_reference = &vector;
 
         // If the resource is immutable, then you can borrow many references.
         // For example:
